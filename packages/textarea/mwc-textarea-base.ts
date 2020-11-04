@@ -52,37 +52,42 @@ export abstract class TextAreaBase extends TextFieldBase {
   @property({converter: booleanOrStringConverter})
   charCounter: boolean|TextAreaCharCounter = false;
 
-  protected get shouldRenderHelperText(): boolean {
-    return !!this.helper || !!this.validationMessage ||
-        (this.charCounterVisible && this.charCounter !== 'internal');
-  }
-
   render() {
-    const withInternalCounter = this.charCounter === 'internal';
+    const shouldRenderCharCounter = this.charCounter && this.maxLength !== -1;
+    const shouldRenderInternalCharCounter =
+        shouldRenderCharCounter && this.charCounter === 'internal';
+    const shouldRenderExternalCharCounter =
+        shouldRenderCharCounter && !shouldRenderInternalCharCounter;
+    const shouldRenderHelperText = !!this.helper || !!this.validationMessage ||
+        shouldRenderExternalCharCounter;
+
     const classes = {
       'mdc-text-field--disabled': this.disabled,
       'mdc-text-field--no-label': !this.label,
       'mdc-text-field--filled': !this.outlined,
       'mdc-text-field--outlined': this.outlined,
       'mdc-text-field--end-aligned': this.endAligned,
-      'mdc-text-field--with-internal-counter': withInternalCounter,
+      'mdc-text-field--with-internal-counter': shouldRenderInternalCharCounter,
     };
 
-    const charCounter = this.renderCharCounter();
     return html`
       <label class="mdc-text-field mdc-text-field--textarea ${
         classMap(classes)}">
         ${this.renderRipple()}
         ${this.outlined ? this.renderOutline() : this.renderLabel()}
-        ${this.renderInput()}
-        ${withInternalCounter ? charCounter : ''}
+        ${this.renderInput(shouldRenderHelperText)}
+        ${this.renderCharCounter(shouldRenderInternalCharCounter)}
         ${this.renderLineRipple()}
       </label>
-      ${this.renderHelperText(withInternalCounter ? '' : charCounter)}
+      ${
+        this.renderHelperText(
+            shouldRenderHelperText, shouldRenderExternalCharCounter)}
     `;
   }
 
-  protected renderInput() {
+  protected renderInput(
+      // tslint:disable-next-line:no-unused-expression
+      shouldRenderHelperText: boolean) {
     const minOrUndef = this.minLength === -1 ? undefined : this.minLength;
     const maxOrUndef = this.maxLength === -1 ? undefined : this.maxLength;
     const autocapitalizeOrUndef = this.autocapitalize ?
